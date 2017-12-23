@@ -1,12 +1,14 @@
 import Network.SSH.Client.LibSSH2
 import Network.SSH.Client.LibSSH2.Foreign
-import qualified Data.ByteString.Lazy as C
+import qualified Data.ByteString.Lazy as B
+import qualified Data.ByteString.Char8 as C
 import System.Environment
 import System.FilePath
+import Control.Concurrent.Async
 
 main :: IO ()
 main = do
-    initialize True >>= print
+    -- initialize True >>= print
     home <- getEnv "HOME"
     let known_hosts = home </> ".ssh" </> "known_hosts"
         public = home </> ".ssh" </> "id_rsa.pub"
@@ -26,5 +28,10 @@ sessionActions s = do
 channelActions :: Channel -> IO ()
 channelActions ch = do
     print "got channel"
+    writer <- async $ do
+        writeChannel ch $ C.pack "world\n"
+        channelSendEOF ch
     out <- readAllChannel ch
-    C.putStr out
+    B.putStr out
+    wait writer
+
